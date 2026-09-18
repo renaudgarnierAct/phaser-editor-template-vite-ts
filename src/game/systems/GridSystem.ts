@@ -12,9 +12,13 @@ export class GridSystem {
         this.chapter = chapter;
     }
 
-    terrainAt(point: GridPoint): TerrainDefinition | undefined {
+    terrainIdAt(point: GridPoint): string | undefined {
         const code = this.chapter.map.tiles[point.y]?.[point.x];
-        const terrainId = code === undefined ? undefined : this.chapter.map.terrainLegend[code];
+        return code === undefined ? undefined : this.chapter.map.terrainLegend[code];
+    }
+
+    terrainAt(point: GridPoint): TerrainDefinition | undefined {
+        const terrainId = this.terrainIdAt(point);
         return terrainId === undefined ? undefined : this.chapter.terrain[terrainId];
     }
 

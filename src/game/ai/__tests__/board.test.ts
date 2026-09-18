@@ -32,6 +32,8 @@ test('createBoardQuery adapts a real GridSystem/ChapterData pair for the AI to c
     const board = createBoardQuery(chapter, grid);
 
     assert.equal(board.units.length, 2);
+    assert.equal(grid.terrainIdAt({ x: 0, y: 0 }), 'plain');
+    assert.equal(grid.terrainIdAt({ x: -1, y: 0 }), undefined);
     assert.deepEqual(board.terrainAt({ x: 0, y: 0 }), { name: 'Plaine', moveCost: 1, defense: 0, avoid: 0, color: 0 });
     assert.equal(board.tileKey({ x: 1, y: 2 }), '1,2');
 

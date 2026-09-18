@@ -8,8 +8,20 @@ import type { ChapterManifest, DialogueCatalog } from '../types.ts';
 import type { EventScript } from '../../events/types.ts';
 import { buildChapterContent } from '../loadChapterContent.ts';
 import { validateDialogueCatalog, resolveDialogueRefs } from '../dialogueCatalog.ts';
-import { mergeEventScripts, validateHookUnitReferences } from '../validate.ts';
-import { DuplicateHookEventIdError, UnknownDialogueRefError } from '../errors.ts';
+import {
+    mergeEventScripts,
+    validateChapterData,
+    validateChapterManifest,
+    validateHookUnitReferences
+} from '../validate.ts';
+import {
+    DuplicateHookEventIdError,
+    InvalidChapterDataError,
+    InvalidChapterManifestError,
+    InvalidDialogueCatalogError,
+    InvalidHookScriptError,
+    UnknownDialogueRefError
+} from '../errors.ts';
 import { EventEngine } from '../../events/EventEngine.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -116,6 +128,13 @@ test('validateDialogueCatalog rejects duplicate entry ids', () => {
     assert.throws(() => validateDialogueCatalog(catalog));
 });
 
+test('validateDialogueCatalog rejects malformed catalog roots with an explicit error', () => {
+    assert.throws(
+        () => validateDialogueCatalog({ id: 'dialogues:test' } as DialogueCatalog),
+        (error: unknown) => error instanceof InvalidDialogueCatalogError && error.message.includes('"entries" must be an array')
+    );
+});
+
 test('resolveDialogueRefs throws UnknownDialogueRefError for a missing reference', () => {
     const script: EventScript = {
         id: 'events:test',
@@ -142,5 +161,145 @@ test('validateHookUnitReferences rejects a trigger pointing at an unknown unit i
         events: [{ id: 'event:test', trigger: { type: 'unit_dead', unitId: 'unit:nonexistent' }, actions: [] }]
     };
 
-    assert.throws(() => validateHookUnitReferences(chapter, [script]));
+    assert.throws(
+        () => validateHookUnitReferences(chapter, [script]),
+        (error: unknown) => error instanceof InvalidHookScriptError && error.message.includes('unit:nonexistent')
+    );
+});
+
+test('validateChapterManifest rejects empty hook references', () => {
+    const manifest = readJson<ChapterManifest>('chapter-demo.manifest.json');
+    manifest.hooks.duringChapter = '';
+
+    assert.throws(
+        () => validateChapterManifest(manifest),
+        (error: unknown) => error instanceof InvalidChapterManifestError && error.message.includes('hooks.duringChapter')
+    );
+});
+
+test('buildChapterContent rejects a chapter id that does not match its manifest', () => {
+    const manifest = readJson<ChapterManifest>('chapter-demo.manifest.json');
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const content = loadDemoContent();
+    chapter.id = 'chapter:other';
+
+    assert.throws(
+        () => buildChapterContent(manifest, chapter, content.dialogueCatalog, content.hooks),
+        (error: unknown) => error instanceof InvalidChapterDataError && error.message.includes('does not match manifest id')
+    );
+});
+
+test('validateChapterData rejects rows whose width differs from the declared map width', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    chapter.map.tiles[0] = 'P';
+
+    assert.throws(
+        () => validateChapterData(chapter),
+        (error: unknown) => error instanceof InvalidChapterDataError && error.message.includes('map row 0')
+    );
+});
+
+test('validateChapterData rejects terrain codes missing from the legend', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    chapter.map.tiles[0] = `X${chapter.map.tiles[0].slice(1)}`;
+
+    assert.throws(
+        () => validateChapterData(chapter),
+        (error: unknown) => error instanceof InvalidChapterDataError && error.message.includes('terrain code "X"')
+    );
+});
+
+test('validateChapterData rejects duplicate unit ids and occupied tiles', () => {
+    const duplicateIdChapter = readJson<ChapterData>('chapter-demo.json');
+    duplicateIdChapter.units[1].id = duplicateIdChapter.units[0].id;
+    assert.throws(() => validateChapterData(duplicateIdChapter), /duplicate unit id/);
+
+    const occupiedTileChapter = readJson<ChapterData>('chapter-demo.json');
+    occupiedTileChapter.units[1].x = occupiedTileChapter.units[0].x;
+    occupiedTileChapter.units[1].y = occupiedTileChapter.units[0].y;
+    assert.throws(() => validateChapterData(occupiedTileChapter), /occupy the same tile/);
+});
+
+test('hook validation rejects unknown action unit references', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const script: EventScript = {
+        id: 'events:test',
+        events: [{
+            id: 'event:test',
+            trigger: { type: 'chapter_start' },
+            actions: [{ type: 'give_item', unitId: 'unit:nonexistent', itemId: 'item:test' }]
+        }]
+    };
+
+    assert.throws(
+        () => validateHookUnitReferences(chapter, [script]),
+        (error: unknown) => error instanceof InvalidHookScriptError
+            && error.message.includes('action "give_item"')
+            && error.message.includes('unit:nonexistent')
+    );
+});
+
+test('hook validation rejects event coordinates outside the chapter map', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const script: EventScript = {
+        id: 'events:test',
+        events: [{
+            id: 'event:test',
+            trigger: { type: 'arrival', x: chapter.map.width, y: 0 },
+            actions: []
+        }]
+    };
+
+    assert.throws(
+        () => validateHookUnitReferences(chapter, [script]),
+        (error: unknown) => error instanceof InvalidHookScriptError && error.message.includes('out-of-bounds coordinates')
+    );
+});
+
+test('hook validation rejects malformed event payloads before EventEngine execution', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const script: EventScript = {
+        id: 'events:test',
+        events: [{
+            id: 'event:test',
+            trigger: { type: 'unit_dead' } as never,
+            actions: []
+        }]
+    };
+
+    assert.throws(
+        () => validateHookUnitReferences(chapter, [script]),
+        (error: unknown) => error instanceof InvalidHookScriptError && error.message.includes('"undefined"')
+    );
+});
+
+test('hook validation rejects dialogue actions without a reference or inline lines', () => {
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const script: EventScript = {
+        id: 'events:test',
+        events: [{
+            id: 'event:test',
+            trigger: { type: 'chapter_start' },
+            actions: [{ type: 'dialogue' }]
+        }]
+    };
+
+    assert.throws(
+        () => validateHookUnitReferences(chapter, [script]),
+        (error: unknown) => error instanceof InvalidHookScriptError && error.message.includes('"dialogueRef"')
+    );
+});
+
+test('buildChapterContent rejects dialogue references when no catalog is declared', () => {
+    const manifest = readJson<ChapterManifest>('chapter-demo.manifest.json');
+    delete manifest.dialogueCatalogRef;
+    const chapter = readJson<ChapterData>('chapter-demo.json');
+    const preChapter = readJson<EventScript>('events-demo-pre.json');
+    const duringChapter = readJson<EventScript>('events-demo-during.json');
+    const postChapter = readJson<EventScript>('events-demo-post.json');
+
+    assert.throws(
+        () => buildChapterContent(manifest, chapter, undefined, { preChapter, duringChapter, postChapter }),
+        UnknownDialogueRefError
+    );
 });

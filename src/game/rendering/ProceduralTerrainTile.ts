@@ -1,13 +1,7 @@
 import * as Phaser from 'phaser';
+import type { TerrainTileKind } from './TerrainTileKind';
 
-export type TerrainTileKind =
-    | 'plain'
-    | 'forest'
-    | 'fort'
-    | 'mountain'
-    | 'road'
-    | 'house'
-    | 'village';
+export { isTerrainTileKind, TERRAIN_TILE_KINDS, type TerrainTileKind } from './TerrainTileKind';
 
 export type TerrainPalette = Record<string, number>;
 
@@ -194,9 +188,8 @@ export function getTerrainTileDefinition(kind: TerrainTileKind): TerrainTileDefi
 /**
  * Creates a reusable square terrain graphic without textures or external assets.
  *
- * Scene integration point (deliberately not wired into `Game.ts`):
- * `createProceduralTerrainTile(this, terrainId, { x, y, size: TILE_SIZE, gridX, gridY })`.
- * Add the returned Graphics object to the board layer and attach the scene's pointer handler to it.
+ * Add the returned Graphics object to a scene or board layer. Keep interaction
+ * on a separate hit area when highlights must be redrawn independently.
  */
 export function createProceduralTerrainTile(
     scene: Phaser.Scene,
