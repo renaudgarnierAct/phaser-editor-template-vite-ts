@@ -28,8 +28,23 @@
     "fort": { "name": "Fort", "moveCost": 1, "defense": 2, "avoid": 10, "color": 10760472 }
   },
   "units": [
-    { "id": "unit:rowan", "name": "Rowan", "faction": "player", "classId": "class:lord", "x": 2, "y": 4, "movement": 5, "color": 39423 },
-    { "id": "unit:lyra", "name": "Lyra", "faction": "player", "classId": "class:mage", "x": 1, "y": 5, "movement": 5, "color": 16744192 },
-    { "id": "unit:guard", "name": "Garde", "faction": "enemy", "classId": "class:knight", "x": 9, "y": 3, "movement": 4, "color": 14423100 }
+    {
+      "id": "unit:rowan", "name": "Rowan", "faction": "player", "classId": "class:lord",
+      "x": 2, "y": 4, "movement": 5, "color": 39423,
+      "stats": { "hp": 20, "maxHp": 20, "attack": 8, "defense": 5, "speed": 7, "luck": 5 },
+      "weapon": { "id": "weapon:sword", "name": "Épée courte", "might": 5, "hit": 90, "crit": 10, "minRange": 1, "maxRange": 1 }
+    },
+    {
+      "id": "unit:lyra", "name": "Lyra", "faction": "player", "classId": "class:mage",
+      "x": 1, "y": 5, "movement": 5, "color": 16744192,
+      "stats": { "hp": 16, "maxHp": 16, "attack": 7, "defense": 2, "speed": 6, "luck": 6 },
+      "weapon": { "id": "weapon:fire", "name": "Tome de feu", "might": 6, "hit": 80, "crit": 5, "minRange": 1, "maxRange": 2 }
+    },
+    {
+      "id": "unit:guard", "name": "Garde", "faction": "enemy", "classId": "class:knight",
+      "x": 9, "y": 3, "movement": 4, "color": 14423100,
+      "stats": { "hp": 24, "maxHp": 24, "attack": 6, "defense": 8, "speed": 4, "luck": 2 },
+      "weapon": { "id": "weapon:lance", "name": "Lance de fer", "might": 6, "hit": 85, "crit": 0, "minRange": 1, "maxRange": 1 }
+    }
   ]
 }

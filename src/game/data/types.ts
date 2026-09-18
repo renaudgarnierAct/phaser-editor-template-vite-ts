@@ -21,6 +21,25 @@ export interface ChapterData {
     units: UnitData[];
 }
 
+export interface UnitStats {
+    hp: number;
+    maxHp: number;
+    attack: number;
+    defense: number;
+    speed: number;
+    luck: number;
+}
+
+export interface WeaponData {
+    id: string;
+    name: string;
+    might: number;
+    hit: number;
+    crit: number;
+    minRange: number;
+    maxRange: number;
+}
+
 export interface UnitData {
     id: string;
     name: string;
@@ -30,4 +49,6 @@ export interface UnitData {
     y: number;
     movement: number;
     color: number;
+    stats: UnitStats;
+    weapon: WeaponData;
 }
