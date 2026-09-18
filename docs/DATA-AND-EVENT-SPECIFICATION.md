@@ -233,29 +233,29 @@ supplémentaires dans `promotesTo`, sans changement moteur).
 # classes/classes.catalog.yaml
 - schemaVersion: "1.0"
   kind: class
-  id: class:myrmidon
-  name: "Myrmidon"
+  id: class:lord
+  name: "Lord"
   tier: base
-  promotesTo: ["class:swordmaster"]
-  promotionRequirements: { minLevel: 10, itemRef: item:seal_hero }
+  promotesTo: ["class:great_lord"]
+  promotionRequirements: { minLevel: 10, itemRef: item:seal_lord }
   movement: 5
   movementType: foot
-  baseStats: { hp: 18, str: 4, mag: 0, skl: 8, spd: 9, lck: 4, def: 3, res: 1, con: 6 }
-  growths:   { hp: 70, str: 35, mag: 0, skl: 60, spd: 65, lck: 45, def: 20, res: 15 }
-  weaponRanksAllowed: ["sword"]
-  baseWeaponRanks: { sword: "D" }
+  baseStats: { hp: 20, str: 6, mag: 1, skl: 6, spd: 7, lck: 5, def: 5, res: 2, con: 7 }
+  growths:   { hp: 75, str: 45, mag: 15, skl: 45, spd: 50, lck: 40, def: 30, res: 20 }
+  weaponRanksAllowed: ["sword", "lance"]
+  baseWeaponRanks: { sword: "D", lance: "E" }
 
 - schemaVersion: "1.0"
   kind: class
-  id: class:swordmaster
-  name: "Swordmaster"
+  id: class:great_lord
+  name: "Great Lord"
   tier: promoted
   movement: 6
   movementType: foot
-  baseStats: { hp: 24, str: 7, mag: 0, skl: 12, spd: 13, lck: 6, def: 6, res: 4, con: 7 }
-  growths:   { hp: 75, str: 40, mag: 0, skl: 65, spd: 70, lck: 45, def: 25, res: 20 }
-  weaponRanksAllowed: ["sword"]
-  baseWeaponRanks: { sword: "C" }
+  baseStats: { hp: 28, str: 10, mag: 2, skl: 9, spd: 10, lck: 7, def: 8, res: 5, con: 8 }
+  growths:   { hp: 80, str: 50, mag: 20, skl: 50, spd: 55, lck: 40, def: 35, res: 25 }
+  weaponRanksAllowed: ["sword", "lance"]
+  baseWeaponRanks: { sword: "C", lance: "D" }
 
 - schemaVersion: "1.0"
   kind: class
@@ -285,29 +285,29 @@ supplémentaires dans `promotesTo`, sans changement moteur).
 
 - schemaVersion: "1.0"
   kind: class
-  id: class:fighter
-  name: "Fighter"
+  id: class:knight
+  name: "Knight"
   tier: base
-  promotesTo: ["class:warrior"]
-  promotionRequirements: { minLevel: 10, itemRef: item:seal_hero }
+  promotesTo: ["class:general"]
+  promotionRequirements: { minLevel: 10, itemRef: item:seal_knight }
   movement: 5
-  movementType: foot
-  baseStats: { hp: 24, str: 8, mag: 0, skl: 4, spd: 5, lck: 3, def: 5, res: 0, con: 12 }
-  growths:   { hp: 90, str: 55, mag: 0, skl: 35, spd: 30, lck: 25, def: 30, res: 5 }
-  weaponRanksAllowed: ["axe"]
-  baseWeaponRanks: { axe: "D" }
+  movementType: armored
+  baseStats: { hp: 22, str: 8, mag: 0, skl: 4, spd: 3, lck: 2, def: 11, res: 0, con: 13 }
+  growths:   { hp: 85, str: 50, mag: 0, skl: 35, spd: 20, lck: 20, def: 45, res: 10 }
+  weaponRanksAllowed: ["lance"]
+  baseWeaponRanks: { lance: "D" }
 
 - schemaVersion: "1.0"
   kind: class
-  id: class:warrior
-  name: "Warrior"
+  id: class:general
+  name: "General"
   tier: promoted
   movement: 6
-  movementType: foot
-  baseStats: { hp: 32, str: 12, mag: 0, skl: 7, spd: 8, lck: 4, def: 9, res: 3, con: 13 }
-  growths:   { hp: 95, str: 60, mag: 0, skl: 40, spd: 35, lck: 25, def: 35, res: 10 }
-  weaponRanksAllowed: ["axe", "bow"]
-  baseWeaponRanks: { axe: "C", bow: "D" }
+  movementType: armored
+  baseStats: { hp: 31, str: 12, mag: 0, skl: 7, spd: 5, lck: 4, def: 16, res: 4, con: 15 }
+  growths:   { hp: 90, str: 55, mag: 0, skl: 40, spd: 25, lck: 20, def: 50, res: 15 }
+  weaponRanksAllowed: ["lance", "axe"]
+  baseWeaponRanks: { lance: "C", axe: "D" }
 
 - schemaVersion: "1.0"
   kind: class
