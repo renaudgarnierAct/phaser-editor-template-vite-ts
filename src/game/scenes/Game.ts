@@ -16,6 +16,7 @@ import { createBoardQuery } from '../ai/board';
 import { decideAction } from '../ai/decide';
 import { loadAIChapterFile, resolveAIProfile, type AIProfileMap } from '../ai/loadAIProfiles';
 import type { AIBoardQuery, AIDecision } from '../ai/types';
+import { BattlePopup } from '../ui/BattlePopup';
 
 const TILE_SIZE = 56;
 const BOARD_ORIGIN = { x: 32, y: 130 };
@@ -38,6 +39,7 @@ export default class Game extends Phaser.Scene {
     private turnText!: Phaser.GameObjects.Text;
     private endTurnButton!: Phaser.GameObjects.Text;
     private boardLayer!: Phaser.GameObjects.Container;
+    private battlePopup?: BattlePopup;
     private phase: TurnPhase = 'player';
     private turnNumber = 1;
     private readonly actedUnitIds = new Set<string>();
@@ -252,15 +254,63 @@ export default class Game extends Phaser.Scene {
     }
 
     private executeAttack(attacker: UnitData, defender: UnitData): void {
-        const result = this.applyCombat(attacker, defender);
-        this.markUnitActed(attacker);
+        if (this.battlePopup !== undefined) {
+            return;
+        }
 
-        this.statusText.setText(this.formatResult(attacker, defender, result));
-        this.clearPreview();
-        this.reachable.clear();
-        this.attackable.clear();
-        this.selectedUnit = undefined;
-        this.refreshHighlights();
+        const result = resolveCombat(
+            attacker,
+            defender,
+            this.terrainBonusFor(attacker),
+            this.terrainBonusFor(defender)
+        );
+        this.battlePopup = new BattlePopup(this, {
+            title: 'COMBAT',
+            left: {
+                name: attacker.name,
+                className: attacker.classId.replace('class:', ''),
+                hp: attacker.stats.hp,
+                maxHp: attacker.stats.maxHp,
+                damage: result.attackerDamage,
+                hit: result.attackerHitChance,
+                critical: result.attackerCritChance,
+                color: attacker.color
+            },
+            right: {
+                name: defender.name,
+                className: defender.classId.replace('class:', ''),
+                hp: defender.stats.hp,
+                maxHp: defender.stats.maxHp,
+                damage: result.defenderDamage,
+                hit: result.defenderHitChance,
+                critical: result.defenderCritChance,
+                color: defender.color
+            },
+            exchanges: result.rounds.map((round) => ({
+                actor: round.actor === 'attacker' ? 'left' : 'right',
+                hit: round.hit,
+                critical: round.critical,
+                damage: round.damage,
+                targetHpAfter: round.targetHpAfter
+            })),
+            onConfirm: () => {
+                this.applyCombatResult(attacker, defender, result);
+                this.markUnitActed(attacker);
+                this.statusText.setText(this.formatResult(attacker, defender, result));
+            },
+            onCancel: () => {
+                this.battlePopup = undefined;
+                this.statusText.setText('Combat annulé.');
+            },
+            onComplete: () => {
+                this.battlePopup = undefined;
+                this.clearPreview();
+                this.reachable.clear();
+                this.attackable.clear();
+                this.selectedUnit = undefined;
+                this.refreshHighlights();
+            }
+        });
     }
 
     private applyCombat(attacker: UnitData, defender: UnitData): CombatResult {
@@ -271,6 +321,11 @@ export default class Game extends Phaser.Scene {
             this.terrainBonusFor(defender)
         );
 
+        this.applyCombatResult(attacker, defender, result);
+        return result;
+    }
+
+    private applyCombatResult(attacker: UnitData, defender: UnitData, result: CombatResult): void {
         attacker.stats.hp = result.attackerHpAfter;
         defender.stats.hp = result.defenderHpAfter;
         this.updateUnitHp(attacker);
@@ -283,7 +338,6 @@ export default class Game extends Phaser.Scene {
             this.removeUnit(attacker);
         }
 
-        return result;
     }
 
     private updateUnitHp(unit: UnitData): void {
