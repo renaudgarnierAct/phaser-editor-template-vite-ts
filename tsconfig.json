@@ -29,6 +29,7 @@
     "exclude": [
         "src/game/systems/__tests__",
         "src/game/world/__tests__",
-        "src/game/save/__tests__"
+        "src/game/save/__tests__",
+        "src/game/content/__tests__"
     ]
 }

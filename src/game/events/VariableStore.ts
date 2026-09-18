@@ -1,5 +1,5 @@
-import type { VariableScope, VariableValue } from './types';
-import { UnknownVariableScopeError } from './errors';
+import type { VariableScope, VariableValue } from './types.ts';
+import { UnknownVariableScopeError } from './errors.ts';
 
 export type VariableChangeListener = (
     scope: VariableScope,

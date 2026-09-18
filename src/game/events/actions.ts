@@ -10,7 +10,7 @@ import type {
     VariableScope
 } from './types';
 import type { VariableStore } from './VariableStore';
-import { ActionValidationError, UnknownActionHandlerError } from './errors';
+import { ActionValidationError, UnknownActionHandlerError } from './errors.ts';
 
 export interface ActionContext {
     variables: VariableStore;

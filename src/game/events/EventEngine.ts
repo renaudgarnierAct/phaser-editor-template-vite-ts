@@ -1,9 +1,9 @@
-import type { GameEvent, EventScript, Trigger, VariableScope } from './types';
-import { VariableStore } from './VariableStore';
-import { evaluateCondition } from './conditions';
-import { ActionRegistry, createDefaultActionRegistry } from './actions';
-import type { ActionEffect } from './actions';
-import { DuplicateEventIdError, EventEngineError } from './errors';
+import type { GameEvent, EventScript, Trigger, VariableScope } from './types.ts';
+import { VariableStore } from './VariableStore.ts';
+import { evaluateCondition } from './conditions.ts';
+import { ActionRegistry, createDefaultActionRegistry } from './actions.ts';
+import type { ActionEffect } from './actions.ts';
+import { DuplicateEventIdError, EventEngineError } from './errors.ts';
 
 export interface EventFiredResult {
     eventId: string;

@@ -1,6 +1,6 @@
 import type { Condition, VariableCondition } from './types';
 import type { VariableStore } from './VariableStore';
-import { InvalidConditionError } from './errors';
+import { InvalidConditionError } from './errors.ts';
 
 /** Evaluates a (possibly nested) condition tree against the current variable state. Pure and deterministic. */
 export function evaluateCondition(condition: Condition, variables: VariableStore): boolean {

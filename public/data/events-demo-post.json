@@ -1,0 +1,20 @@
+{
+  "id": "events:demo:post-chapter",
+  "events": [
+    {
+      "id": "event:demo:post_chapter_dialogue",
+      "trigger": { "type": "variable_change", "variable": { "scope": "chapter", "key": "chapter_outcome" } },
+      "once": false,
+      "condition": {
+        "kind": "variable",
+        "variable": { "scope": "chapter", "key": "chapter_outcome" },
+        "operator": "eq",
+        "value": "victory"
+      },
+      "actions": [
+        { "type": "dialogue", "dialogueRef": "dialogue:post_chapter_hook" },
+        { "type": "set_variable", "variable": { "scope": "campaign", "key": "demo_chapter_completed" }, "value": true }
+      ]
+    }
+  ]
+}

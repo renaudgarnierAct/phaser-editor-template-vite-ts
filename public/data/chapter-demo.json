@@ -1,0 +1,58 @@
+{
+  "id": "chapter:demo",
+  "name": "Chapitre de démonstration",
+  "map": {
+    "width": 10,
+    "height": 6,
+    "tiles": [
+      "PPPPPPPPPP",
+      "PPPPFFPPPP",
+      "PPPPFFPPPP",
+      "PPPPPPPPPP",
+      "PPPPPPPPPP",
+      "PPPPPPPPPP"
+    ],
+    "terrainLegend": {
+      "P": "plain",
+      "F": "forest",
+      "R": "road"
+    }
+  },
+  "terrain": {
+    "plain": { "name": "Plaine", "moveCost": 1, "defense": 0, "avoid": 0, "color": 14540253 },
+    "forest": { "name": "Foret", "moveCost": 2, "defense": 1, "avoid": 15, "color": 6409555 },
+    "road": { "name": "Route", "moveCost": 1, "defense": 0, "avoid": 5, "color": 12171705 }
+  },
+  "units": [
+    {
+      "id": "unit:player_1", "name": "Unite joueur 1", "faction": "player", "classId": "class:generic_soldier",
+      "x": 1, "y": 3, "movement": 5, "color": 39423,
+      "stats": { "hp": 20, "maxHp": 20, "attack": 7, "defense": 5, "speed": 6, "luck": 5 },
+      "weapon": { "id": "weapon:generic_sword", "name": "Epee generique", "might": 5, "hit": 90, "crit": 5, "minRange": 1, "maxRange": 1 }
+    },
+    {
+      "id": "unit:player_2", "name": "Unite joueur 2", "faction": "player", "classId": "class:generic_soldier",
+      "x": 1, "y": 4, "movement": 5, "color": 16744192,
+      "stats": { "hp": 18, "maxHp": 18, "attack": 6, "defense": 4, "speed": 7, "luck": 6 },
+      "weapon": { "id": "weapon:generic_lance", "name": "Lance generique", "might": 5, "hit": 85, "crit": 0, "minRange": 1, "maxRange": 1 }
+    },
+    {
+      "id": "unit:enemy_1", "name": "Unite ennemie 1", "faction": "enemy", "classId": "class:generic_soldier",
+      "x": 6, "y": 2, "movement": 4, "color": 14423100,
+      "stats": { "hp": 18, "maxHp": 18, "attack": 6, "defense": 4, "speed": 5, "luck": 3 },
+      "weapon": { "id": "weapon:generic_lance", "name": "Lance generique", "might": 5, "hit": 80, "crit": 0, "minRange": 1, "maxRange": 1 }
+    },
+    {
+      "id": "unit:enemy_2", "name": "Unite ennemie 2", "faction": "enemy", "classId": "class:generic_soldier",
+      "x": 5, "y": 4, "movement": 5, "color": 14423100,
+      "stats": { "hp": 16, "maxHp": 16, "attack": 5, "defense": 3, "speed": 6, "luck": 2 },
+      "weapon": { "id": "weapon:generic_sword", "name": "Epee generique", "might": 4, "hit": 80, "crit": 0, "minRange": 1, "maxRange": 1 }
+    },
+    {
+      "id": "unit:enemy_boss", "name": "Unite ennemie (boss)", "faction": "enemy", "classId": "class:generic_boss",
+      "x": 8, "y": 1, "movement": 4, "color": 10027008,
+      "stats": { "hp": 30, "maxHp": 30, "attack": 9, "defense": 8, "speed": 4, "luck": 2 },
+      "weapon": { "id": "weapon:generic_axe", "name": "Hache generique", "might": 8, "hit": 75, "crit": 5, "minRange": 1, "maxRange": 1 }
+    }
+  ]
+}
