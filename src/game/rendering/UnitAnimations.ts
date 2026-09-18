@@ -84,6 +84,11 @@ type TweenStep = Omit<UnitTweenConfig, 'targets' | 'onComplete'>;
 const DEFAULT_EASE = 'Sine.InOut';
 
 class SequenceHandle implements UnitAnimationHandle {
+    private readonly driver: UnitTweenDriver;
+    private readonly target: UnitAnimationTarget;
+    private readonly steps: readonly TweenStep[];
+    private readonly onComplete: () => void;
+    private readonly onCancel: () => void;
     private activeTween?: UnitTween;
     private nextStep = 0;
     private status?: UnitAnimationStatus;
@@ -92,12 +97,17 @@ class SequenceHandle implements UnitAnimationHandle {
     readonly finished: Promise<UnitAnimationStatus>;
 
     constructor(
-        private readonly driver: UnitTweenDriver,
-        private readonly target: UnitAnimationTarget,
-        private readonly steps: readonly TweenStep[],
-        private readonly onComplete: () => void,
-        private readonly onCancel: () => void
+        driver: UnitTweenDriver,
+        target: UnitAnimationTarget,
+        steps: readonly TweenStep[],
+        onComplete: () => void,
+        onCancel: () => void
     ) {
+        this.driver = driver;
+        this.target = target;
+        this.steps = steps;
+        this.onComplete = onComplete;
+        this.onCancel = onCancel;
         let resolveFinished!: (status: UnitAnimationStatus) => void;
         this.finished = new Promise((resolve) => {
             resolveFinished = resolve;
@@ -149,10 +159,13 @@ class SequenceHandle implements UnitAnimationHandle {
 }
 
 export class UnitAnimator {
+    private readonly driver: UnitTweenDriver;
     private readonly activeByTarget = new WeakMap<UnitAnimationTarget, UnitAnimationHandle>();
     private readonly activeHandles = new Set<UnitAnimationHandle>();
 
-    constructor(private readonly driver: UnitTweenDriver) {}
+    constructor(driver: UnitTweenDriver) {
+        this.driver = driver;
+    }
 
     move(
         target: UnitAnimationTarget,
