@@ -1,0 +1,55 @@
+{
+  "id": "dialogues:demo",
+  "entries": [
+    {
+      "id": "dialogue:pre_chapter_hook",
+      "lines": [
+        "[Placeholder - dialogue avant chapitre 1]",
+        "[Placeholder - dialogue avant chapitre 2]"
+      ]
+    },
+    {
+      "id": "dialogue:house_info",
+      "lines": [
+        "[Placeholder - information maison visitee]"
+      ]
+    },
+    {
+      "id": "dialogue:village_reward",
+      "lines": [
+        "[Placeholder - recompense village visite]"
+      ]
+    },
+    {
+      "id": "dialogue:village_destroyed",
+      "lines": [
+        "[Placeholder - village detruit avant visite]"
+      ]
+    },
+    {
+      "id": "dialogue:recruit_hook",
+      "lines": [
+        "[Placeholder - dialogue de recrutement conditionnel 1]",
+        "[Placeholder - dialogue de recrutement conditionnel 2]"
+      ]
+    },
+    {
+      "id": "dialogue:recruit_confirm",
+      "lines": [
+        "[Placeholder - confirmation de recrutement]"
+      ]
+    },
+    {
+      "id": "dialogue:boss_defeated",
+      "lines": [
+        "[Placeholder - boss vaincu]"
+      ]
+    },
+    {
+      "id": "dialogue:post_chapter_hook",
+      "lines": [
+        "[Placeholder - dialogue apres chapitre]"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "chapter:demo",
+  "name": "Chapitre de démonstration",
+  "chapterDataRef": "/data/chapter-demo.json",
+  "dialogueCatalogRef": "/data/dialogues-demo.json",
+  "hooks": {
+    "preChapter": "/data/events-demo-pre.json",
+    "duringChapter": "/data/events-demo-during.json",
+    "postChapter": "/data/events-demo-post.json"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "events:demo:during-chapter",
+  "events": [
+    {
+      "id": "event:demo:house_visited",
+      "trigger": { "type": "house", "houseId": "house:demo_house_1" },
+      "actions": [
+        { "type": "dialogue", "dialogueRef": "dialogue:house_info" },
+        { "type": "give_item", "unitId": "unit:player_1", "itemId": "item:generic_vulnerary", "quantity": 1 },
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "house_1_visited" }, "value": true }
+      ]
+    },
+    {
+      "id": "event:demo:village_visited_reward",
+      "trigger": { "type": "village", "villageId": "village:demo_village_1" },
+      "condition": {
+        "kind": "all",
+        "conditions": [
+          {
+            "kind": "not",
+            "condition": {
+              "kind": "variable",
+              "variable": { "scope": "chapter", "key": "village_1_destroyed" },
+              "operator": "eq",
+              "value": true
+            }
+          },
+          {
+            "kind": "not",
+            "condition": {
+              "kind": "variable",
+              "variable": { "scope": "chapter", "key": "village_1_visited" },
+              "operator": "eq",
+              "value": true
+            }
+          }
+        ]
+      },
+      "actions": [
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "village_1_visited" }, "value": true },
+        { "type": "give_item", "unitId": "unit:player_1", "itemId": "item:generic_gold_bag", "quantity": 1 },
+        { "type": "dialogue", "dialogueRef": "dialogue:village_reward" }
+      ]
+    },
+    {
+      "id": "event:demo:village_destroyed",
+      "trigger": { "type": "arrival", "x": 3, "y": 5, "unitId": "unit:enemy_2" },
+      "condition": {
+        "kind": "not",
+        "condition": {
+          "kind": "variable",
+          "variable": { "scope": "chapter", "key": "village_1_visited" },
+          "operator": "eq",
+          "value": true
+        }
+      },
+      "actions": [
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "village_1_destroyed" }, "value": true },
+        { "type": "dialogue", "dialogueRef": "dialogue:village_destroyed" }
+      ]
+    },
+    {
+      "id": "event:demo:recruit_dialogue_hook",
+      "trigger": { "type": "arrival", "x": 6, "y": 2, "unitId": "unit:player_1" },
+      "actions": [
+        { "type": "dialogue", "dialogueRef": "dialogue:recruit_hook" },
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "recruit_1_unlocked" }, "value": true }
+      ]
+    },
+    {
+      "id": "event:demo:recruit_conditional",
+      "trigger": { "type": "recruitment", "unitId": "unit:enemy_1" },
+      "condition": {
+        "kind": "variable",
+        "variable": { "scope": "chapter", "key": "recruit_1_unlocked" },
+        "operator": "eq",
+        "value": true
+      },
+      "actions": [
+        { "type": "recruit", "unitId": "unit:enemy_1" },
+        { "type": "dialogue", "dialogueRef": "dialogue:recruit_confirm" }
+      ]
+    },
+    {
+      "id": "event:demo:boss_dead_objective",
+      "trigger": { "type": "boss_dead", "unitId": "unit:enemy_boss" },
+      "actions": [
+        { "type": "dialogue", "dialogueRef": "dialogue:boss_defeated" },
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "chapter_outcome" }, "value": "victory" },
+        { "type": "end_chapter", "outcome": "victory" }
+      ]
+    }
+  ]
+}

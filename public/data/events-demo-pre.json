@@ -1,0 +1,12 @@
+{
+  "id": "events:demo:pre-chapter",
+  "events": [
+    {
+      "id": "event:demo:pre_chapter_dialogue",
+      "trigger": { "type": "chapter_start" },
+      "actions": [
+        { "type": "dialogue", "dialogueRef": "dialogue:pre_chapter_hook" }
+      ]
+    }
+  ]
+}
