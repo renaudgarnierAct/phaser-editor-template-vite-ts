@@ -4,6 +4,7 @@ import MainGame from './scenes/Game';
 import MainMenu from './scenes/MainMenu';
 import * as Phaser from 'phaser';
 import Preloader from './scenes/Preloader';
+import WorldMap from './scenes/WorldMap';
 
 // Find out more information about the Game Config at:
 // https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
@@ -17,6 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
         Boot,
         Preloader,
         MainMenu,
+        WorldMap,
         MainGame,
         GameOver
     ]
