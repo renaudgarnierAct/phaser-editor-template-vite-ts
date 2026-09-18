@@ -1,0 +1,153 @@
+{
+  "classes": [
+    {
+      "id": "class:soldier",
+      "name": "Soldat",
+      "baseStats": { "hp": 19, "str": 6, "mag": 0, "skl": 5, "spd": 6, "lck": 2, "def": 5, "res": 1, "con": 8 },
+      "growths": { "hp": 85, "str": 45, "mag": 0, "skl": 50, "spd": 45, "lck": 35, "def": 35, "res": 15, "con": 0 },
+      "statCaps": { "hp": 40, "str": 20, "mag": 5, "skl": 20, "spd": 18, "lck": 20, "def": 18, "res": 12, "con": 12 },
+      "movement": 5,
+      "usableWeaponTypes": { "lance": "E" },
+      "promotesTo": ["class:knight"],
+      "promotionBonus": { "hp": 4, "str": 3, "skl": 2, "spd": 1, "def": 4, "res": 2, "con": 2 },
+      "promotionMovementBonus": 0
+    },
+    {
+      "id": "class:knight",
+      "name": "Chevalier",
+      "baseStats": { "hp": 23, "str": 9, "mag": 0, "skl": 7, "spd": 7, "lck": 2, "def": 9, "res": 3, "con": 10 },
+      "growths": { "hp": 90, "str": 50, "mag": 0, "skl": 45, "spd": 35, "lck": 30, "def": 45, "res": 20, "con": 0 },
+      "statCaps": { "hp": 45, "str": 22, "mag": 5, "skl": 20, "spd": 16, "lck": 20, "def": 22, "res": 15, "con": 14 },
+      "movement": 5,
+      "usableWeaponTypes": { "lance": "C", "sword": "E" }
+    },
+    {
+      "id": "class:mage",
+      "name": "Mage",
+      "baseStats": { "hp": 16, "str": 0, "mag": 7, "skl": 5, "spd": 6, "lck": 3, "def": 2, "res": 5, "con": 5 },
+      "growths": { "hp": 55, "str": 10, "mag": 55, "skl": 45, "spd": 45, "lck": 30, "def": 15, "res": 45, "con": 0 },
+      "statCaps": { "hp": 36, "str": 5, "mag": 20, "skl": 20, "spd": 18, "lck": 20, "def": 12, "res": 18, "con": 8 },
+      "movement": 5,
+      "usableWeaponTypes": { "tome": "E" },
+      "promotesTo": ["class:sage"],
+      "promotionBonus": { "hp": 2, "mag": 3, "skl": 2, "spd": 1, "lck": 1, "res": 3 }
+    },
+    {
+      "id": "class:sage",
+      "name": "Sage",
+      "baseStats": { "hp": 18, "str": 0, "mag": 10, "skl": 7, "spd": 7, "lck": 4, "def": 2, "res": 8, "con": 5 },
+      "growths": { "hp": 60, "str": 10, "mag": 55, "skl": 45, "spd": 40, "lck": 30, "def": 15, "res": 50, "con": 0 },
+      "statCaps": { "hp": 40, "str": 8, "mag": 24, "skl": 22, "spd": 20, "lck": 22, "def": 14, "res": 22, "con": 9 },
+      "movement": 6,
+      "usableWeaponTypes": { "tome": "C", "staff": "D" }
+    }
+  ],
+  "items": [
+    {
+      "id": "item:iron-lance",
+      "name": "Lance de fer",
+      "kind": "weapon",
+      "stackable": false,
+      "maxStack": 1,
+      "price": 460,
+      "sellable": true,
+      "weaponType": "lance",
+      "rank": "E",
+      "might": 8,
+      "hit": 80,
+      "crit": 0,
+      "range": [1, 1],
+      "weight": 9,
+      "effectiveness": ["cavalry"],
+      "experienceValue": 1
+    },
+    {
+      "id": "item:steel-lance",
+      "name": "Lance d'acier",
+      "kind": "weapon",
+      "stackable": false,
+      "maxStack": 1,
+      "price": 800,
+      "sellable": true,
+      "weaponType": "lance",
+      "rank": "D",
+      "might": 11,
+      "hit": 75,
+      "crit": 0,
+      "range": [1, 1],
+      "weight": 13,
+      "effectiveness": ["cavalry"],
+      "experienceValue": 1
+    },
+    {
+      "id": "item:fire-tome",
+      "name": "Tome de feu",
+      "kind": "weapon",
+      "stackable": false,
+      "maxStack": 1,
+      "price": 600,
+      "sellable": true,
+      "weaponType": "tome",
+      "rank": "E",
+      "might": 5,
+      "hit": 90,
+      "crit": 0,
+      "range": [1, 2],
+      "weight": 5,
+      "experienceValue": 1
+    },
+    {
+      "id": "item:heal-staff",
+      "name": "Bâton de soin",
+      "kind": "weapon",
+      "stackable": false,
+      "maxStack": 1,
+      "price": 500,
+      "sellable": false,
+      "weaponType": "staff",
+      "rank": "E",
+      "might": 0,
+      "hit": 100,
+      "crit": 0,
+      "range": [1, 10],
+      "weight": 3,
+      "experienceValue": 1
+    },
+    {
+      "id": "item:vulnerary",
+      "name": "Fortifiant",
+      "kind": "consumable",
+      "stackable": true,
+      "maxStack": 3,
+      "price": 300,
+      "sellable": true
+    },
+    {
+      "id": "item:elixir",
+      "name": "Élixir",
+      "kind": "consumable",
+      "stackable": true,
+      "maxStack": 3,
+      "price": 900,
+      "sellable": true
+    },
+    {
+      "id": "item:promotion-seal",
+      "name": "Sceau de maître",
+      "kind": "valuable",
+      "stackable": true,
+      "maxStack": 3,
+      "price": 0,
+      "sellable": false
+    },
+    {
+      "id": "item:chapter-key",
+      "name": "Clé de la crypte",
+      "kind": "key",
+      "stackable": false,
+      "maxStack": 1,
+      "price": 0,
+      "sellable": false
+    }
+  ]
+}
