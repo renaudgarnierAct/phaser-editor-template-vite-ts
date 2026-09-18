@@ -1,8 +1,9 @@
 import type { ChapterData } from '../data/types.ts';
 import type { EventScript } from '../events/types.ts';
 import type { ChapterContent, ChapterHookPhase, ChapterManifest, DialogueCatalog } from './types.ts';
-import { loadDialogueCatalog, resolveDialogueRefs } from './dialogueCatalog.ts';
-import { mergeEventScripts, validateChapterManifest, validateHookUnitReferences } from './validate.ts';
+import { loadDialogueCatalog, resolveDialogueRefs, validateDialogueCatalog } from './dialogueCatalog.ts';
+import { mergeEventScripts, validateChapterData, validateChapterManifest, validateHookScripts } from './validate.ts';
+import { UnknownDialogueRefError } from './errors.ts';
 
 const EMPTY_SCRIPT_ID_SUFFIX: Record<ChapterHookPhase, string> = {
     preChapter: 'pre-chapter',
@@ -55,6 +56,27 @@ export function buildChapterContent(
     dialogueCatalog: DialogueCatalog | undefined,
     hooks: Record<ChapterHookPhase, EventScript>
 ): ChapterContent {
+    validateChapterManifest(manifest);
+    validateChapterData(chapter, manifest.id);
+    if (dialogueCatalog !== undefined) {
+        validateDialogueCatalog(dialogueCatalog);
+    }
+
+    const scripts = [hooks.preChapter, hooks.duringChapter, hooks.postChapter];
+    validateHookScripts(chapter, scripts);
+    if (dialogueCatalog === undefined) {
+        for (const script of scripts) {
+            for (const event of script.events) {
+                for (const action of event.actions) {
+                    const dialogueRef = (action as unknown as Record<string, unknown>).dialogueRef;
+                    if (action.type === 'dialogue' && typeof dialogueRef === 'string') {
+                        throw new UnknownDialogueRefError(dialogueRef);
+                    }
+                }
+            }
+        }
+    }
+
     const resolvedHooks: Record<ChapterHookPhase, EventScript> = dialogueCatalog
         ? {
               preChapter: resolveDialogueRefs(hooks.preChapter, dialogueCatalog),
@@ -62,8 +84,6 @@ export function buildChapterContent(
               postChapter: resolveDialogueRefs(hooks.postChapter, dialogueCatalog)
           }
         : hooks;
-
-    validateHookUnitReferences(chapter, [resolvedHooks.preChapter, resolvedHooks.duringChapter, resolvedHooks.postChapter]);
 
     const combinedScript = mergeEventScripts(`events:${manifest.id}:combined`, [
         resolvedHooks.preChapter,

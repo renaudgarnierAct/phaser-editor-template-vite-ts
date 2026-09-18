@@ -17,9 +17,25 @@ export async function loadDialogueCatalog(path: string): Promise<DialogueCatalog
 
 /** Validates that every entry has a unique, non-empty id and a non-empty list of string lines. */
 export function validateDialogueCatalog(catalog: DialogueCatalog): void {
+    if (typeof catalog !== 'object' || catalog === null) {
+        throw new InvalidDialogueCatalogError('catalog must be an object');
+    }
+
+    if (typeof catalog.id !== 'string' || catalog.id.length === 0) {
+        throw new InvalidDialogueCatalogError('"id" must be a non-empty string');
+    }
+
+    if (!Array.isArray(catalog.entries)) {
+        throw new InvalidDialogueCatalogError('"entries" must be an array');
+    }
+
     const seenIds = new Set<string>();
 
     for (const entry of catalog.entries) {
+        if (typeof entry !== 'object' || entry === null) {
+            throw new InvalidDialogueCatalogError('every entry must be an object');
+        }
+
         if (typeof entry.id !== 'string' || entry.id.length === 0) {
             throw new InvalidDialogueCatalogError('every entry must have a non-empty "id"');
         }
@@ -31,6 +47,10 @@ export function validateDialogueCatalog(catalog: DialogueCatalog): void {
 
         if (!Array.isArray(entry.lines) || entry.lines.length === 0 || entry.lines.some((line) => typeof line !== 'string')) {
             throw new InvalidDialogueCatalogError(`entry "${entry.id}" must have a non-empty array of string "lines"`);
+        }
+
+        if (entry.speaker !== undefined && typeof entry.speaker !== 'string') {
+            throw new InvalidDialogueCatalogError(`entry "${entry.id}" must have a string "speaker" when provided`);
         }
     }
 }

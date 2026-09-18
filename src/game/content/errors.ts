@@ -26,6 +26,20 @@ export class InvalidChapterManifestError extends ChapterContentError {
     }
 }
 
+export class InvalidChapterDataError extends ChapterContentError {
+    constructor(message: string) {
+        super(`Invalid chapter data: ${message}`);
+        this.name = 'InvalidChapterDataError';
+    }
+}
+
+export class InvalidHookScriptError extends ChapterContentError {
+    constructor(message: string) {
+        super(`Invalid chapter hook script: ${message}`);
+        this.name = 'InvalidHookScriptError';
+    }
+}
+
 export class DuplicateHookEventIdError extends ChapterContentError {
     constructor(id: string) {
         super(`Duplicate event id across chapter hooks: "${id}"`);
