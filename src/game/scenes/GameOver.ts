@@ -2,7 +2,7 @@
 
 /* START OF COMPILED CODE */
 
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 /* START-USER-IMPORTS */
 /* END-USER-IMPORTS */
 

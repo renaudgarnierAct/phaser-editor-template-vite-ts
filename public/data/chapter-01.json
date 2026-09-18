@@ -1,0 +1,35 @@
+{
+  "id": "chapter:green-meadow",
+  "name": "La prairie d'ambre",
+  "map": {
+    "width": 12,
+    "height": 8,
+    "tiles": [
+      "PPPPPPPPPPPP",
+      "PPPPFFPPPPPP",
+      "PPPPFFPPPPPP",
+      "PPPPPPPPPPPP",
+      "PPPPPPPPPPPP",
+      "PPPPPPPPPPPP",
+      "PPPPPPPPPPPP",
+      "PPPPPPPPPPPP"
+    ],
+    "terrainLegend": {
+      "P": "plain",
+      "F": "forest",
+      "R": "road",
+      "T": "fort"
+    }
+  },
+  "terrain": {
+    "plain": { "name": "Plaine", "moveCost": 1, "defense": 0, "avoid": 0, "color": 14540253 },
+    "forest": { "name": "Foret", "moveCost": 2, "defense": 1, "avoid": 15, "color": 6409555 },
+    "road": { "name": "Route", "moveCost": 1, "defense": 0, "avoid": 5, "color": 12171705 },
+    "fort": { "name": "Fort", "moveCost": 1, "defense": 2, "avoid": 10, "color": 10760472 }
+  },
+  "units": [
+    { "id": "unit:rowan", "name": "Rowan", "faction": "player", "classId": "class:lord", "x": 2, "y": 4, "movement": 5, "color": 39423 },
+    { "id": "unit:lyra", "name": "Lyra", "faction": "player", "classId": "class:mage", "x": 1, "y": 5, "movement": 5, "color": 16744192 },
+    { "id": "unit:guard", "name": "Garde", "faction": "enemy", "classId": "class:knight", "x": 9, "y": 3, "movement": 4, "color": 14423100 }
+  ]
+}

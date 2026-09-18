@@ -2,7 +2,7 @@ import Boot from './scenes/Boot';
 import GameOver from './scenes/GameOver';
 import MainGame from './scenes/Game';
 import MainMenu from './scenes/MainMenu';
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import Preloader from './scenes/Preloader';
 
 // Find out more information about the Game Config at:
