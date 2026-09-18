@@ -11,6 +11,7 @@ import {
     type CombatResult,
     type TerrainCombatBonus
 } from '../systems/CombatSystem';
+import { createPixelUnitSprite } from '../rendering/PixelUnitSprite';
 
 const TILE_SIZE = 56;
 const BOARD_ORIGIN = { x: 32, y: 130 };
@@ -91,6 +92,7 @@ export default class Game extends Phaser.Scene {
 
     private createUnitSprite(unit: UnitData): void {
         const circle = this.add.circle(0, 0, 17, unit.color).setStrokeStyle(3, 0xf5f0df);
+        const pixelSprite = createPixelUnitSprite(this, unit);
         const label = this.add.text(0, 25, unit.name, {
             color: '#ffffff',
             fontFamily: 'Arial',
@@ -105,7 +107,7 @@ export default class Game extends Phaser.Scene {
             stroke: '#182331',
             strokeThickness: 3
         }).setOrigin(0.5);
-        const sprite = this.add.container(0, 0, [circle, label, hpText]).setSize(TILE_SIZE, TILE_SIZE).setInteractive();
+        const sprite = this.add.container(0, 0, [circle, pixelSprite, label, hpText]).setSize(TILE_SIZE, TILE_SIZE).setInteractive();
         sprite.on('pointerdown', () => this.handleUnitClick(unit));
         sprite.on('pointerover', () => this.handleUnitHover(unit));
         sprite.on('pointerout', () => this.clearPreview());
