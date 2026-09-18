@@ -12,13 +12,21 @@ import {
     type TerrainCombatBonus
 } from '../systems/CombatSystem';
 import { createPixelUnitSprite } from '../rendering/PixelUnitSprite';
+import { createBoardQuery } from '../ai/board';
+import { decideAction } from '../ai/decide';
+import { loadAIChapterFile, resolveAIProfile, type AIProfileMap } from '../ai/loadAIProfiles';
+import type { AIBoardQuery, AIDecision } from '../ai/types';
 
 const TILE_SIZE = 56;
 const BOARD_ORIGIN = { x: 32, y: 130 };
 
+type TurnPhase = 'player' | 'enemy';
+
 export default class Game extends Phaser.Scene {
     private chapter!: ChapterData;
     private grid!: GridSystem;
+    private board!: AIBoardQuery;
+    private aiProfiles: AIProfileMap = new Map();
     private selectedUnit?: UnitData;
     private reachable = new Set<string>();
     private attackable = new Map<string, UnitData>();
@@ -27,7 +35,12 @@ export default class Game extends Phaser.Scene {
     private readonly unitHpTexts = new Map<string, Phaser.GameObjects.Text>();
     private statusText!: Phaser.GameObjects.Text;
     private previewText!: Phaser.GameObjects.Text;
+    private turnText!: Phaser.GameObjects.Text;
+    private endTurnButton!: Phaser.GameObjects.Text;
     private boardLayer!: Phaser.GameObjects.Container;
+    private phase: TurnPhase = 'player';
+    private turnNumber = 1;
+    private readonly actedUnitIds = new Set<string>();
 
     constructor() {
         super('Game');
@@ -51,6 +64,22 @@ export default class Game extends Phaser.Scene {
             fontFamily: 'Arial',
             fontSize: '14px'
         });
+        this.turnText = this.add.text(992, 28, '', {
+            color: '#f8e7bd',
+            fontFamily: 'Arial',
+            fontSize: '18px',
+            fontStyle: 'bold'
+        }).setOrigin(1, 0);
+        this.endTurnButton = this.add.text(992, 56, 'Fin du tour', {
+            color: '#182331',
+            backgroundColor: '#f8e7bd',
+            fontFamily: 'Arial',
+            fontSize: '16px',
+            fontStyle: 'bold',
+            padding: { x: 12, y: 6 }
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+        this.endTurnButton.on('pointerdown', () => this.endPlayerTurn());
+        this.updateTurnUi();
         this.loadChapter();
     }
 
@@ -58,12 +87,23 @@ export default class Game extends Phaser.Scene {
         try {
             this.chapter = await loadChapter('/data/chapter-01.json');
             this.grid = new GridSystem(this.chapter);
+            this.board = createBoardQuery(this.chapter, this.grid);
+            this.aiProfiles = await this.loadAIProfilesSafely();
             this.renderBoard();
             this.statusText.setText('Sélectionnez une unité bleue pour afficher ses déplacements.');
         } catch (error) {
             this.statusText.setColor('#ff9b9b');
             this.statusText.setText('Erreur de chargement des données de chapitre.');
             console.error(error);
+        }
+    }
+
+    private async loadAIProfilesSafely(): Promise<AIProfileMap> {
+        try {
+            return await loadAIChapterFile('/data/ai-chapter-01.json');
+        } catch (error) {
+            console.warn('Impossible de charger les profils IA, utilisation du comportement par défaut.', error);
+            return new Map();
         }
     }
 
@@ -119,7 +159,15 @@ export default class Game extends Phaser.Scene {
     }
 
     private handleUnitClick(unit: UnitData): void {
+        if (this.phase !== 'player') {
+            return;
+        }
+
         if (unit.faction === 'player') {
+            if (this.actedUnitIds.has(unit.id)) {
+                this.statusText.setText(`${unit.name} a déjà agi ce tour-ci.`);
+                return;
+            }
             this.selectPlayerUnit(unit);
             return;
         }
@@ -147,7 +195,7 @@ export default class Game extends Phaser.Scene {
     }
 
     private handleTileClick(point: GridPoint): void {
-        if (this.selectedUnit === undefined || !this.reachable.has(this.grid.key(point))) {
+        if (this.phase !== 'player' || this.selectedUnit === undefined || !this.reachable.has(this.grid.key(point))) {
             return;
         }
 
@@ -158,14 +206,16 @@ export default class Game extends Phaser.Scene {
             return;
         }
 
-        this.selectedUnit.x = point.x;
-        this.selectedUnit.y = point.y;
-        this.placeUnitSprite(this.selectedUnit);
+        const movedUnit = this.selectedUnit;
+        movedUnit.x = point.x;
+        movedUnit.y = point.y;
+        this.placeUnitSprite(movedUnit);
+        this.markUnitActed(movedUnit);
         this.reachable.clear();
         this.attackable.clear();
         this.clearPreview();
         this.refreshHighlights();
-        this.statusText.setText(`${this.selectedUnit.name} a rejoint la case ${point.x + 1},${point.y + 1}.`);
+        this.statusText.setText(`${movedUnit.name} a rejoint la case ${point.x + 1},${point.y + 1}.`);
         this.selectedUnit = undefined;
     }
 
@@ -202,6 +252,18 @@ export default class Game extends Phaser.Scene {
     }
 
     private executeAttack(attacker: UnitData, defender: UnitData): void {
+        const result = this.applyCombat(attacker, defender);
+        this.markUnitActed(attacker);
+
+        this.statusText.setText(this.formatResult(attacker, defender, result));
+        this.clearPreview();
+        this.reachable.clear();
+        this.attackable.clear();
+        this.selectedUnit = undefined;
+        this.refreshHighlights();
+    }
+
+    private applyCombat(attacker: UnitData, defender: UnitData): CombatResult {
         const result = resolveCombat(
             attacker,
             defender,
@@ -221,12 +283,7 @@ export default class Game extends Phaser.Scene {
             this.removeUnit(attacker);
         }
 
-        this.statusText.setText(this.formatResult(attacker, defender, result));
-        this.clearPreview();
-        this.reachable.clear();
-        this.attackable.clear();
-        this.selectedUnit = undefined;
-        this.refreshHighlights();
+        return result;
     }
 
     private updateUnitHp(unit: UnitData): void {
@@ -238,10 +295,93 @@ export default class Game extends Phaser.Scene {
         this.unitSprites.delete(unit.id);
         this.unitCircles.delete(unit.id);
         this.unitHpTexts.delete(unit.id);
+        this.actedUnitIds.delete(unit.id);
         const index = this.chapter.units.findIndex((item) => item.id === unit.id);
         if (index !== -1) {
             this.chapter.units.splice(index, 1);
         }
+    }
+
+    private markUnitActed(unit: UnitData): void {
+        this.actedUnitIds.add(unit.id);
+        this.unitSprites.get(unit.id)?.setAlpha(0.5);
+    }
+
+    private resetActedVisuals(): void {
+        this.actedUnitIds.clear();
+        this.unitSprites.forEach((sprite) => sprite.setAlpha(1));
+    }
+
+    private updateTurnUi(): void {
+        const phaseLabel = this.phase === 'player' ? 'Phase Joueur' : 'Phase Ennemie';
+        this.turnText.setText(`Tour ${this.turnNumber} • ${phaseLabel}`);
+    }
+
+    /** Ends the player phase and hands control to the enemy AI phase, then returns to the player. */
+    private endPlayerTurn(): void {
+        if (this.phase !== 'player') {
+            return;
+        }
+
+        this.selectedUnit = undefined;
+        this.reachable.clear();
+        this.attackable.clear();
+        this.clearPreview();
+        this.refreshHighlights();
+
+        this.phase = 'enemy';
+        this.endTurnButton.disableInteractive().setAlpha(0.4);
+        this.updateTurnUi();
+
+        this.runEnemyPhase();
+    }
+
+    /** Resolves every living enemy unit's action for this turn using the existing AI decision system, then starts the next player turn. */
+    private runEnemyPhase(): void {
+        const log: string[] = [];
+        const enemyUnits = this.livingUnits().filter((unit) => unit.faction === 'enemy');
+
+        for (const unit of enemyUnits) {
+            if (unit.stats.hp <= 0) {
+                continue;
+            }
+            const profile = resolveAIProfile(unit.id, this.aiProfiles);
+            const decision = decideAction(unit, profile, this.board);
+            log.push(this.applyEnemyDecision(unit, decision));
+        }
+
+        this.statusText.setText(log.length > 0 ? log.join(' ') : "Aucune unité ennemie n'a pu agir.");
+        this.clearPreview();
+        this.startPlayerTurn();
+    }
+
+    /** Applies a single AI decision (move and/or attack) using the same movement and combat systems as the player. */
+    private applyEnemyDecision(unit: UnitData, decision: AIDecision): string {
+        if (decision.moveTo !== undefined && (decision.moveTo.x !== unit.x || decision.moveTo.y !== unit.y)) {
+            unit.x = decision.moveTo.x;
+            unit.y = decision.moveTo.y;
+            this.placeUnitSprite(unit);
+        }
+
+        if (decision.action === 'attack' && decision.target !== undefined) {
+            const result = this.applyCombat(unit, decision.target);
+            return this.formatResult(unit, decision.target, result);
+        }
+
+        if (decision.action === 'move') {
+            return `${unit.name} se replace.`;
+        }
+
+        return `${unit.name} attend.`;
+    }
+
+    private startPlayerTurn(): void {
+        this.phase = 'player';
+        this.turnNumber += 1;
+        this.resetActedVisuals();
+        this.endTurnButton.setInteractive({ useHandCursor: true }).setAlpha(1);
+        this.updateTurnUi();
+        this.refreshHighlights();
     }
 
     private terrainBonusFor(unit: UnitData): TerrainCombatBonus {
