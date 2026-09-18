@@ -1,0 +1,88 @@
+{
+  "id": "events:chapter-01",
+  "events": [
+    {
+      "id": "event:chapter-01:intro",
+      "trigger": { "type": "chapter_start" },
+      "actions": [
+        { "type": "dialogue", "speaker": "Rowan", "lines": ["La prairie semble calme...", "Restons prudents."] },
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "intro_seen" }, "value": true }
+      ]
+    },
+    {
+      "id": "event:chapter-01:turn-3-reinforcements",
+      "trigger": { "type": "turn", "turn": 3, "faction": "enemy" },
+      "actions": [
+        { "type": "spawn", "unitId": "unit:scout", "classId": "class:archer", "faction": "enemy", "x": 11, "y": 0 },
+        { "type": "dialogue", "lines": ["Des renforts ennemis arrivent !"] }
+      ]
+    },
+    {
+      "id": "event:chapter-01:house-1",
+      "trigger": { "type": "house", "houseId": "house:1" },
+      "actions": [
+        { "type": "give_item", "unitId": "unit:rowan", "itemId": "item:vulnerary", "quantity": 1 },
+        { "type": "dialogue", "lines": ["Vous trouvez une fiole de soin."] }
+      ]
+    },
+    {
+      "id": "event:chapter-01:village-1",
+      "trigger": { "type": "village", "villageId": "village:1" },
+      "condition": {
+        "kind": "not",
+        "condition": {
+          "kind": "variable",
+          "variable": { "scope": "chapter", "key": "village_1_visited" },
+          "operator": "eq",
+          "value": true
+        }
+      },
+      "actions": [
+        { "type": "set_variable", "variable": { "scope": "chapter", "key": "village_1_visited" }, "value": true },
+        { "type": "dialogue", "speaker": "Villageois", "lines": ["Merci de nous avoir protégés !"] }
+      ]
+    },
+    {
+      "id": "event:chapter-01:recruit-guard",
+      "trigger": { "type": "recruitment", "unitId": "unit:guard" },
+      "actions": [
+        { "type": "recruit", "unitId": "unit:guard" },
+        { "type": "dialogue", "lines": ["Le garde rejoint votre cause."] }
+      ]
+    },
+    {
+      "id": "event:chapter-01:arrival-throne",
+      "trigger": { "type": "arrival", "unitId": "unit:rowan", "x": 9, "y": 3 },
+      "actions": [
+        { "type": "dialogue", "lines": ["Rowan atteint le tronc de commandement."] }
+      ]
+    },
+    {
+      "id": "event:chapter-01:boss-defeated",
+      "trigger": { "type": "boss_dead", "unitId": "unit:guard" },
+      "condition": {
+        "kind": "all",
+        "conditions": [
+          {
+            "kind": "variable",
+            "variable": { "scope": "chapter", "key": "intro_seen" },
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      },
+      "actions": [
+        { "type": "set_variable", "variable": { "scope": "campaign", "key": "green_meadow_cleared" }, "value": true },
+        { "type": "end_chapter", "outcome": "victory" }
+      ]
+    },
+    {
+      "id": "event:chapter-01:cleared-broadcast",
+      "trigger": { "type": "variable_change", "variable": { "scope": "campaign", "key": "green_meadow_cleared" } },
+      "once": false,
+      "actions": [
+        { "type": "dialogue", "lines": ["La rumeur de la victoire se répand dans le royaume."] }
+      ]
+    }
+  ]
+}
