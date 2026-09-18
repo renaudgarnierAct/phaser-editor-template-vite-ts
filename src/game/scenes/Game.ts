@@ -17,6 +17,7 @@ import { decideAction } from '../ai/decide';
 import { loadAIChapterFile, resolveAIProfile, type AIProfileMap } from '../ai/loadAIProfiles';
 import type { AIBoardQuery, AIDecision } from '../ai/types';
 import { BattlePopup } from '../ui/BattlePopup';
+import { createProceduralTerrainTile, isTerrainTileKind } from '../rendering/ProceduralTerrainTile';
 
 const TILE_SIZE = 56;
 const BOARD_ORIGIN = { x: 32, y: 130 };
@@ -34,6 +35,7 @@ export default class Game extends Phaser.Scene {
     private readonly unitSprites = new Map<string, Phaser.GameObjects.Container>();
     private readonly unitCircles = new Map<string, Phaser.GameObjects.Arc>();
     private readonly unitHpTexts = new Map<string, Phaser.GameObjects.Text>();
+    private readonly tileOverlays = new Map<Phaser.GameObjects.Rectangle, GridPoint>();
     private statusText!: Phaser.GameObjects.Text;
     private previewText!: Phaser.GameObjects.Text;
     private turnText!: Phaser.GameObjects.Text;
@@ -111,20 +113,45 @@ export default class Game extends Phaser.Scene {
 
     private renderBoard(): void {
         this.boardLayer = this.add.container(0, 0);
+        this.tileOverlays.clear();
         for (let y = 0; y < this.chapter.map.height; y += 1) {
             for (let x = 0; x < this.chapter.map.width; x += 1) {
                 const terrain = this.grid.terrainAt({ x, y });
-                if (terrain === undefined) {
+                const terrainId = this.grid.terrainIdAt({ x, y });
+                if (terrain === undefined || terrainId === undefined) {
                     continue;
                 }
+
+                if (isTerrainTileKind(terrainId)) {
+                    const terrainSprite = createProceduralTerrainTile(this, terrainId, {
+                        x: BOARD_ORIGIN.x + x * TILE_SIZE,
+                        y: BOARD_ORIGIN.y + y * TILE_SIZE,
+                        size: TILE_SIZE,
+                        gridX: x,
+                        gridY: y
+                    });
+                    this.boardLayer.add(terrainSprite);
+                } else {
+                    const fallback = this.add.rectangle(
+                        BOARD_ORIGIN.x + x * TILE_SIZE + TILE_SIZE / 2,
+                        BOARD_ORIGIN.y + y * TILE_SIZE + TILE_SIZE / 2,
+                        TILE_SIZE,
+                        TILE_SIZE,
+                        terrain.color
+                    );
+                    this.boardLayer.add(fallback);
+                }
+
                 const tile = this.add.rectangle(
                     BOARD_ORIGIN.x + x * TILE_SIZE + TILE_SIZE / 2,
                     BOARD_ORIGIN.y + y * TILE_SIZE + TILE_SIZE / 2,
-                    TILE_SIZE - 2,
-                    TILE_SIZE - 2,
-                    terrain.color
+                    TILE_SIZE,
+                    TILE_SIZE,
+                    0xffffff,
+                    0
                 ).setStrokeStyle(1, 0x263644, 0.8).setInteractive();
                 tile.on('pointerdown', () => this.handleTileClick({ x, y }));
+                this.tileOverlays.set(tile, { x, y });
                 this.boardLayer.add(tile);
             }
         }
@@ -497,24 +524,16 @@ export default class Game extends Phaser.Scene {
             [...this.attackable.values()].map((unit) => this.grid.key({ x: unit.x, y: unit.y }))
         );
 
-        this.boardLayer?.each((child) => {
-            const tile = child as Phaser.GameObjects.Rectangle;
-            if (!(tile instanceof Phaser.GameObjects.Rectangle)) {
-                return;
-            }
-            const point = {
-                x: Math.round((tile.x - BOARD_ORIGIN.x - TILE_SIZE / 2) / TILE_SIZE),
-                y: Math.round((tile.y - BOARD_ORIGIN.y - TILE_SIZE / 2) / TILE_SIZE)
-            };
+        this.tileOverlays.forEach((point, tile) => {
             const key = this.grid.key(point);
             const isReachable = this.reachable.has(key);
             const isAttackable = attackablePoints.has(key);
 
             if (isAttackable) {
-                tile.setAlpha(0.75);
+                tile.setFillStyle(0xff5b5b, 0.22);
                 tile.setStrokeStyle(4, 0xff5b5b, 1);
             } else {
-                tile.setAlpha(isReachable ? 0.75 : 1);
+                tile.setFillStyle(isReachable ? 0xf8e7bd : 0xffffff, isReachable ? 0.2 : 0);
                 tile.setStrokeStyle(isReachable ? 3 : 1, isReachable ? 0xf8e7bd : 0x263644, 0.9);
             }
         });

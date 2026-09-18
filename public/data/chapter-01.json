@@ -5,27 +5,33 @@
     "width": 12,
     "height": 8,
     "tiles": [
-      "PPPPPPPPPPPP",
-      "PPPPFFPPPPPP",
-      "PPPPFFPPPPPP",
-      "PPPPPPPPPPPP",
-      "PPPPPPPPPPPP",
-      "PPPPPPPPPPPP",
-      "PPPPPPPPPPPP",
-      "PPPPPPPPPPPP"
+      "PPPPPRRPPPPP",
+      "PPPPFFRPPPPP",
+      "PPPPFFRPPMPP",
+      "PPPPPRRPPPPP",
+      "HPPPPRRPPPPV",
+      "PPPPPRRPPPPP",
+      "PPPPPRTPPPPP",
+      "PPPPPRRPPPPP"
     ],
     "terrainLegend": {
       "P": "plain",
       "F": "forest",
       "R": "road",
-      "T": "fort"
+      "T": "fort",
+      "M": "mountain",
+      "H": "house",
+      "V": "village"
     }
   },
   "terrain": {
     "plain": { "name": "Plaine", "moveCost": 1, "defense": 0, "avoid": 0, "color": 14540253 },
     "forest": { "name": "Foret", "moveCost": 2, "defense": 1, "avoid": 15, "color": 6409555 },
     "road": { "name": "Route", "moveCost": 1, "defense": 0, "avoid": 5, "color": 12171705 },
-    "fort": { "name": "Fort", "moveCost": 1, "defense": 2, "avoid": 10, "color": 10760472 }
+    "fort": { "name": "Fort", "moveCost": 1, "defense": 2, "avoid": 10, "color": 10760472 },
+    "mountain": { "name": "Montagne", "moveCost": 3, "defense": 2, "avoid": 20, "color": 10526833 },
+    "house": { "name": "Maison", "moveCost": 1, "defense": 1, "avoid": 10, "color": 9411938 },
+    "village": { "name": "Village", "moveCost": 1, "defense": 1, "avoid": 10, "color": 9543014 }
   },
   "units": [
     {
