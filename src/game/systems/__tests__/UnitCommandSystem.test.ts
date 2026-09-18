@@ -79,6 +79,20 @@ test('use_item applies a data-driven healing effect, consumes one item, and ends
     assert.equal(result.units.get(actor.id)?.hasActed, true);
 });
 
+test('use_item preserves healing when the actor targets itself', () => {
+    const actor = unit('self-healer', addItem(createEmptyInventory(), vulnerary, 2).inventory);
+
+    const result = executeUnitCommand(context([actor]), {
+        type: 'use_item',
+        actorId: actor.id,
+        slotIndex: 0
+    });
+
+    assert.equal(result.units.get(actor.id)?.hp, 18);
+    assert.equal(result.units.get(actor.id)?.inventory.slots[0]?.quantity, 1);
+    assert.equal(result.units.get(actor.id)?.hasActed, true);
+});
+
 test('use_item rejects missing effects and full-health targets with explicit errors', () => {
     const actor = unit('healer', addItem(createEmptyInventory(), vulnerary, 1).inventory);
     const fullHealth = { ...unit('full'), hp: 20 };

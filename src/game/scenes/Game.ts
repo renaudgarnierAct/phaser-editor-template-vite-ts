@@ -17,12 +17,29 @@ import { decideAction } from '../ai/decide';
 import { loadAIChapterFile, resolveAIProfile, type AIProfileMap } from '../ai/loadAIProfiles';
 import type { AIBoardQuery, AIDecision } from '../ai/types';
 import { BattlePopup } from '../ui/BattlePopup';
+import { loadRpgData } from '../data/loadRpgData';
+import { indexRpgData } from '../data/rpgData';
+import type { ItemDefinition } from '../data/items';
+import { addItem, createEmptyInventory } from '../systems/InventorySystem';
+import { createConvoy, type Convoy } from '../systems/ConvoySystem';
+import {
+    canAct,
+    executeUnitCommand,
+    UnitCommandError,
+    type CommandUnit,
+    type UnitCommand
+} from '../systems/UnitCommandSystem';
 import { createProceduralTerrainTile, isTerrainTileKind } from '../rendering/ProceduralTerrainTile';
 
 const TILE_SIZE = 56;
 const BOARD_ORIGIN = { x: 32, y: 130 };
 
 type TurnPhase = 'player' | 'enemy';
+
+interface CommandButton {
+    text: Phaser.GameObjects.Text;
+    enabled: boolean;
+}
 
 export default class Game extends Phaser.Scene {
     private chapter!: ChapterData;
@@ -42,6 +59,16 @@ export default class Game extends Phaser.Scene {
     private endTurnButton!: Phaser.GameObjects.Text;
     private boardLayer!: Phaser.GameObjects.Container;
     private battlePopup?: BattlePopup;
+    private commandTitle!: Phaser.GameObjects.Text;
+    private commandHint!: Phaser.GameObjects.Text;
+    private readonly commandButtons = new Map<UnitCommand['type'], CommandButton>();
+    private readonly commandUnits = new Map<string, CommandUnit>();
+    private itemsById: ReadonlyMap<string, ItemDefinition> = new Map();
+    private readonly itemEffects = new Map([
+        ['item:vulnerary', { kind: 'restore_hp' as const, amount: 10 }],
+        ['item:elixir', { kind: 'restore_hp' as const, amount: 99 }]
+    ]);
+    private convoy: Convoy = createConvoy();
     private phase: TurnPhase = 'player';
     private turnNumber = 1;
     private readonly actedUnitIds = new Set<string>();
@@ -83,22 +110,48 @@ export default class Game extends Phaser.Scene {
             padding: { x: 12, y: 6 }
         }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
         this.endTurnButton.on('pointerdown', () => this.endPlayerTurn());
+        this.createCommandUi();
         this.updateTurnUi();
         this.loadChapter();
     }
 
     private async loadChapter(): Promise<void> {
         try {
-            this.chapter = await loadChapter('/data/chapter-01.json');
+            const [chapter, rpgData] = await Promise.all([
+                loadChapter('/data/chapter-01.json'),
+                loadRpgData('/data/rpg-progression-sample.json')
+            ]);
+            this.chapter = chapter;
+            this.itemsById = indexRpgData(rpgData).itemsById;
+            this.initializeCommandUnits();
             this.grid = new GridSystem(this.chapter);
             this.board = createBoardQuery(this.chapter, this.grid);
             this.aiProfiles = await this.loadAIProfilesSafely();
             this.renderBoard();
             this.statusText.setText('Sélectionnez une unité bleue pour afficher ses déplacements.');
+            this.refreshCommandUi();
         } catch (error) {
             this.statusText.setColor('#ff9b9b');
-            this.statusText.setText('Erreur de chargement des données de chapitre.');
+            this.statusText.setText('Erreur de chargement des données tactiques (chapitre ou objets).');
             console.error(error);
+        }
+    }
+
+    private initializeCommandUnits(): void {
+        const starterItem = this.itemsById.get('item:vulnerary');
+        for (const unit of this.chapter.units) {
+            let inventory = createEmptyInventory();
+            if (unit.faction === 'player' && starterItem !== undefined) {
+                inventory = addItem(inventory, starterItem, 1).inventory;
+            }
+            this.commandUnits.set(unit.id, {
+                id: unit.id,
+                faction: unit.faction,
+                hp: unit.stats.hp,
+                maxHp: unit.stats.maxHp,
+                inventory,
+                hasActed: false
+            });
         }
     }
 
@@ -109,6 +162,248 @@ export default class Game extends Phaser.Scene {
             console.warn('Impossible de charger les profils IA, utilisation du comportement par défaut.', error);
             return new Map();
         }
+    }
+
+    private createCommandUi(): void {
+        this.add.rectangle(864, 344, 256, 428, 0x101a25, 0.92)
+            .setStrokeStyle(2, 0x596b7d, 1);
+        this.commandTitle = this.add.text(752, 150, 'COMMANDES', {
+            color: '#f8e7bd',
+            fontFamily: 'Arial',
+            fontSize: '18px',
+            fontStyle: 'bold'
+        });
+        this.createCommandButton('wait', 190, 'Attendre', () => this.executeWait());
+        this.createCommandButton('use_item', 238, 'Utiliser un objet', () => this.executeUseItem());
+        this.createCommandButton('trade', 286, 'Échanger', () => this.executeTrade());
+        this.commandHint = this.add.text(752, 342, 'Sélectionnez une unité alliée.', {
+            color: '#9fb0c1',
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            lineSpacing: 5,
+            wordWrap: { width: 224 }
+        });
+        this.refreshCommandUi();
+    }
+
+    private createCommandButton(
+        command: UnitCommand['type'],
+        y: number,
+        label: string,
+        action: () => void
+    ): void {
+        const text = this.add.text(752, y, label, {
+            color: '#182331',
+            backgroundColor: '#f8e7bd',
+            fontFamily: 'Arial',
+            fontSize: '15px',
+            fontStyle: 'bold',
+            fixedWidth: 224,
+            align: 'center',
+            padding: { x: 10, y: 9 }
+        });
+        text.on('pointerdown', action);
+        this.commandButtons.set(command, { text, enabled: true });
+    }
+
+    private refreshCommandUi(): void {
+        if (this.commandTitle === undefined || this.commandHint === undefined) {
+            return;
+        }
+
+        const actor = this.selectedUnit === undefined ? undefined : this.commandUnits.get(this.selectedUnit.id);
+        const actorCanAct = this.phase === 'player' && canAct(actor);
+        const usableSlot = actorCanAct ? this.findUsableItemSlot(actor) : undefined;
+        const trade = actorCanAct && this.selectedUnit !== undefined
+            ? this.findTradeOption(this.selectedUnit, actor)
+            : undefined;
+
+        this.setCommandEnabled('wait', actorCanAct);
+        this.setCommandEnabled('use_item', actorCanAct && usableSlot !== undefined);
+        this.setCommandEnabled('trade', actorCanAct && trade !== undefined);
+
+        if (this.selectedUnit === undefined) {
+            this.commandTitle.setText('COMMANDES');
+            this.commandHint.setText('Sélectionnez une unité alliée.');
+            return;
+        }
+
+        this.commandTitle.setText(`COMMANDES • ${this.selectedUnit.name}`);
+        if (!actorCanAct) {
+            this.commandHint.setText('Indisponible : cette unité ne peut plus agir pendant ce tour.');
+            return;
+        }
+
+        const itemReason = usableSlot === undefined
+            ? 'Objet désactivé : aucun soin utilisable ou PV déjà au maximum.'
+            : `Objet prêt : ${this.itemNameInSlot(actor, usableSlot)}.`;
+        const tradeReason = trade === undefined
+            ? 'Échange désactivé : aucun objet ou allié adjacent disponible.'
+            : `Échange prêt avec ${trade.target.name} : ${this.itemNameInSlot(actor, trade.slotIndex)}.`;
+        this.commandHint.setText(`${itemReason}\n\n${tradeReason}`);
+    }
+
+    private setCommandEnabled(command: UnitCommand['type'], enabled: boolean): void {
+        const button = this.commandButtons.get(command);
+        if (button === undefined || button.enabled === enabled) {
+            return;
+        }
+        button.enabled = enabled;
+        if (enabled) {
+            button.text
+                .setInteractive({ useHandCursor: true })
+                .setAlpha(1)
+                .setColor('#182331')
+                .setBackgroundColor('#f8e7bd');
+        } else {
+            button.text
+                .disableInteractive()
+                .setAlpha(0.45)
+                .setColor('#9aa7b5')
+                .setBackgroundColor('#334252');
+        }
+    }
+
+    private executeWait(): void {
+        if (this.selectedUnit === undefined) {
+            return;
+        }
+        const actor = this.selectedUnit;
+        if (this.executeCommand({ type: 'wait', actorId: actor.id })) {
+            this.statusText.setText(`${actor.name} attend et termine son action.`);
+        }
+    }
+
+    private executeUseItem(): void {
+        if (this.selectedUnit === undefined) {
+            return;
+        }
+        const actor = this.commandUnits.get(this.selectedUnit.id);
+        const slotIndex = this.findUsableItemSlot(actor);
+        if (actor === undefined || slotIndex === undefined) {
+            this.showCommandError('Aucun objet utilisable pour cette unité.');
+            return;
+        }
+
+        const unit = this.selectedUnit;
+        const itemName = this.itemNameInSlot(actor, slotIndex);
+        if (this.executeCommand({ type: 'use_item', actorId: unit.id, slotIndex })) {
+            this.statusText.setText(`${unit.name} utilise ${itemName} et récupère des PV.`);
+        }
+    }
+
+    private executeTrade(): void {
+        if (this.selectedUnit === undefined) {
+            return;
+        }
+        const actor = this.commandUnits.get(this.selectedUnit.id);
+        const trade = actor === undefined ? undefined : this.findTradeOption(this.selectedUnit, actor);
+        if (actor === undefined || trade === undefined) {
+            this.showCommandError('Échange impossible : aucun objet ou allié adjacent disponible.');
+            return;
+        }
+
+        const sceneUnit = this.selectedUnit;
+        const itemName = this.itemNameInSlot(actor, trade.slotIndex);
+        if (this.executeCommand({
+            type: 'trade',
+            actorId: sceneUnit.id,
+            slotIndex: trade.slotIndex,
+            destination: { kind: 'unit', unitId: trade.target.id }
+        })) {
+            this.statusText.setText(`${sceneUnit.name} donne ${itemName} à ${trade.target.name}.`);
+        }
+    }
+
+    private executeCommand(command: UnitCommand): boolean {
+        try {
+            const result = executeUnitCommand({
+                units: this.commandUnits,
+                itemsById: this.itemsById,
+                itemEffects: this.itemEffects,
+                convoy: this.convoy
+            }, command);
+            this.commandUnits.clear();
+            result.units.forEach((unit, id) => this.commandUnits.set(id, unit));
+            this.convoy = result.convoy ?? this.convoy;
+            this.syncUnitsFromCommandState();
+            this.finishSelectedUnitAction();
+            return true;
+        } catch (error) {
+            if (error instanceof UnitCommandError) {
+                this.showCommandError(`Commande refusée (${error.code}) : ${error.message}`);
+                return false;
+            }
+            console.error(error);
+            this.showCommandError('Erreur inattendue pendant l’exécution de la commande.');
+            return false;
+        }
+    }
+
+    private syncUnitsFromCommandState(): void {
+        for (const unit of this.livingUnits()) {
+            const commandUnit = this.commandUnits.get(unit.id);
+            if (commandUnit === undefined) {
+                continue;
+            }
+            unit.stats.hp = commandUnit.hp;
+            this.updateUnitHp(unit);
+            if (commandUnit.hasActed) {
+                this.actedUnitIds.add(unit.id);
+                this.unitSprites.get(unit.id)?.setAlpha(0.5);
+            }
+        }
+    }
+
+    private finishSelectedUnitAction(): void {
+        this.selectedUnit = undefined;
+        this.reachable.clear();
+        this.attackable.clear();
+        this.clearPreview();
+        this.refreshHighlights();
+        this.refreshCommandUi();
+    }
+
+    private showCommandError(message: string): void {
+        this.statusText.setColor('#ff9b9b').setText(message);
+        this.time.delayedCall(2200, () => this.statusText.setColor('#b9c7d6'));
+    }
+
+    private findUsableItemSlot(unit: CommandUnit | undefined): number | undefined {
+        if (unit === undefined || unit.hp >= unit.maxHp) {
+            return undefined;
+        }
+        const slotIndex = unit.inventory.slots.findIndex((stack) => {
+            if (stack === null) {
+                return false;
+            }
+            return this.itemsById.get(stack.itemId)?.kind === 'consumable'
+                && this.itemEffects.has(stack.itemId);
+        });
+        return slotIndex === -1 ? undefined : slotIndex;
+    }
+
+    private findTradeOption(
+        sceneUnit: UnitData,
+        commandUnit: CommandUnit
+    ): { slotIndex: number; target: UnitData } | undefined {
+        const slotIndex = commandUnit.inventory.slots.findIndex((stack) => stack !== null);
+        if (slotIndex === -1) {
+            return undefined;
+        }
+        const target = this.livingUnits().find((unit) =>
+            unit.id !== sceneUnit.id
+            && unit.faction === sceneUnit.faction
+            && Math.max(Math.abs(unit.x - sceneUnit.x), Math.abs(unit.y - sceneUnit.y)) === 1
+        );
+        return target === undefined ? undefined : { slotIndex, target };
+    }
+
+    private itemNameInSlot(unit: CommandUnit, slotIndex: number): string {
+        const stack = unit.inventory.slots[slotIndex];
+        return stack === null || stack === undefined
+            ? 'objet inconnu'
+            : this.itemsById.get(stack.itemId)?.name ?? stack.itemId;
     }
 
     private renderBoard(): void {
@@ -193,7 +488,7 @@ export default class Game extends Phaser.Scene {
         }
 
         if (unit.faction === 'player') {
-            if (this.actedUnitIds.has(unit.id)) {
+            if (!canAct(this.commandUnits.get(unit.id))) {
                 this.statusText.setText(`${unit.name} a déjà agi ce tour-ci.`);
                 return;
             }
@@ -216,6 +511,7 @@ export default class Game extends Phaser.Scene {
         this.attackable = this.computeAttackable(unit);
         this.clearPreview();
         this.refreshHighlights();
+        this.refreshCommandUi();
 
         const targetInfo = this.attackable.size > 0
             ? `${this.attackable.size} cible(s) à portée : cliquez un ennemi surligné pour attaquer.`
@@ -246,6 +542,7 @@ export default class Game extends Phaser.Scene {
         this.refreshHighlights();
         this.statusText.setText(`${movedUnit.name} a rejoint la case ${point.x + 1},${point.y + 1}.`);
         this.selectedUnit = undefined;
+        this.refreshCommandUi();
     }
 
     private computeAttackable(unit: UnitData): Map<string, UnitData> {
@@ -328,6 +625,7 @@ export default class Game extends Phaser.Scene {
             onCancel: () => {
                 this.battlePopup = undefined;
                 this.statusText.setText('Combat annulé.');
+                this.refreshCommandUi();
             },
             onComplete: () => {
                 this.battlePopup = undefined;
@@ -336,6 +634,7 @@ export default class Game extends Phaser.Scene {
                 this.attackable.clear();
                 this.selectedUnit = undefined;
                 this.refreshHighlights();
+                this.refreshCommandUi();
             }
         });
     }
@@ -355,6 +654,8 @@ export default class Game extends Phaser.Scene {
     private applyCombatResult(attacker: UnitData, defender: UnitData, result: CombatResult): void {
         attacker.stats.hp = result.attackerHpAfter;
         defender.stats.hp = result.defenderHpAfter;
+        this.updateCommandUnitHp(attacker);
+        this.updateCommandUnitHp(defender);
         this.updateUnitHp(attacker);
         this.updateUnitHp(defender);
 
@@ -377,6 +678,7 @@ export default class Game extends Phaser.Scene {
         this.unitCircles.delete(unit.id);
         this.unitHpTexts.delete(unit.id);
         this.actedUnitIds.delete(unit.id);
+        this.commandUnits.delete(unit.id);
         const index = this.chapter.units.findIndex((item) => item.id === unit.id);
         if (index !== -1) {
             this.chapter.units.splice(index, 1);
@@ -386,11 +688,18 @@ export default class Game extends Phaser.Scene {
     private markUnitActed(unit: UnitData): void {
         this.actedUnitIds.add(unit.id);
         this.unitSprites.get(unit.id)?.setAlpha(0.5);
+        const commandUnit = this.commandUnits.get(unit.id);
+        if (commandUnit !== undefined) {
+            this.commandUnits.set(unit.id, { ...commandUnit, hasActed: true });
+        }
     }
 
     private resetActedVisuals(): void {
         this.actedUnitIds.clear();
         this.unitSprites.forEach((sprite) => sprite.setAlpha(1));
+        for (const [id, unit] of this.commandUnits) {
+            this.commandUnits.set(id, { ...unit, hasActed: false });
+        }
     }
 
     private updateTurnUi(): void {
@@ -409,6 +718,7 @@ export default class Game extends Phaser.Scene {
         this.attackable.clear();
         this.clearPreview();
         this.refreshHighlights();
+        this.refreshCommandUi();
 
         this.phase = 'enemy';
         this.endTurnButton.disableInteractive().setAlpha(0.4);
@@ -463,6 +773,14 @@ export default class Game extends Phaser.Scene {
         this.endTurnButton.setInteractive({ useHandCursor: true }).setAlpha(1);
         this.updateTurnUi();
         this.refreshHighlights();
+        this.refreshCommandUi();
+    }
+
+    private updateCommandUnitHp(unit: UnitData): void {
+        const commandUnit = this.commandUnits.get(unit.id);
+        if (commandUnit !== undefined) {
+            this.commandUnits.set(unit.id, { ...commandUnit, hp: unit.stats.hp });
+        }
     }
 
     private terrainBonusFor(unit: UnitData): TerrainCombatBonus {

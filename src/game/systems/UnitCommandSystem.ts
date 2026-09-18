@@ -144,7 +144,14 @@ function useItem(context: UnitCommandContext, command: UseItemCommand, actor: Co
     }
 
     const healedTarget = { ...target, hp: Math.min(target.maxHp, target.hp + effect.amount) };
-    const updatedActor = acted({ ...actor, inventory: discardItem(actor.inventory, command.slotIndex, 1) });
+    const actorAfterHealing = target.id === actor.id ? healedTarget : actor;
+    const updatedActor = acted({
+        ...actorAfterHealing,
+        inventory: discardItem(actor.inventory, command.slotIndex, 1)
+    });
+    if (target.id === actor.id) {
+        return replaceUnits(context, command.type, new Map([[updatedActor.id, updatedActor]]));
+    }
     return replaceUnits(context, command.type, new Map([
         [healedTarget.id, healedTarget],
         [updatedActor.id, updatedActor]
