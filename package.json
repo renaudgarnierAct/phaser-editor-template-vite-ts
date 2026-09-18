@@ -18,7 +18,7 @@
     "build": "node log.js build & vite build --config vite/config.prod.mjs",
     "dev-nolog": "vite --config vite/config.dev.mjs",
     "build-nolog": "vite build --config vite/config.prod.mjs",
-    "test": "node --test src/game/systems/__tests__/*.test.ts src/game/ai/__tests__/*.test.ts"
+    "test": "node --test src/game/systems/__tests__/*.test.ts src/game/ai/__tests__/*.test.ts src/game/world/__tests__/*.test.ts src/game/save/__tests__/*.test.ts"
   },
   "devDependencies": {
     "typescript": "~5.7.2",

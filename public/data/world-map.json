@@ -1,0 +1,55 @@
+{
+  "id": "world:overworld",
+  "name": "Overworld",
+  "startNodeId": "node:prologue",
+  "nodes": [
+    {
+      "id": "node:prologue",
+      "chapterId": "chapter-01",
+      "name": "Prologue: The Border Skirmish",
+      "x": 0,
+      "y": 0,
+      "connections": ["node:chapter-2"],
+      "unlock": { "type": "always" }
+    },
+    {
+      "id": "node:chapter-2",
+      "chapterId": "chapter-02",
+      "name": "Chapter 2: The Burning Village",
+      "x": 1,
+      "y": 0,
+      "connections": ["node:chapter-3", "node:sidequest-forest"],
+      "unlock": { "type": "chapterCompleted", "chapterId": "chapter-01" }
+    },
+    {
+      "id": "node:sidequest-forest",
+      "chapterId": "chapter-02b",
+      "name": "Side Quest: The Old Forest",
+      "x": 1,
+      "y": 1,
+      "connections": ["node:chapter-3"],
+      "unlock": {
+        "type": "allOf",
+        "conditions": [
+          { "type": "chapterCompleted", "chapterId": "chapter-01" },
+          { "type": "flag", "flag": "found-forest-map", "equals": true }
+        ]
+      }
+    },
+    {
+      "id": "node:chapter-3",
+      "chapterId": "chapter-03",
+      "name": "Chapter 3: The Capital Falls",
+      "x": 2,
+      "y": 0,
+      "connections": [],
+      "unlock": {
+        "type": "anyOf",
+        "conditions": [
+          { "type": "chapterCompleted", "chapterId": "chapter-02" },
+          { "type": "chapterCompleted", "chapterId": "chapter-02b" }
+        ]
+      }
+    }
+  ]
+}

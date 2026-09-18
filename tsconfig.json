@@ -27,6 +27,8 @@
         "src"
     ],
     "exclude": [
-        "src/game/systems/__tests__"
+        "src/game/systems/__tests__",
+        "src/game/world/__tests__",
+        "src/game/save/__tests__"
     ]
 }
